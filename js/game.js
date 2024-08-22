@@ -9,6 +9,15 @@ class GameObject{
         this.y = y;
         this.origin_x = 0;
         this.origin_y = 0;
+        this.collision = {
+            type: "RECTANGLE",
+            size: {
+                left: 0,
+                top: 0,
+                right: 0,
+                bottom: 0
+            }
+        }
         this.texture = "MISSING_TEXTURE";
         this.instance_id = null;
     }
@@ -36,6 +45,15 @@ class Player extends GameObject{
         this.texture = "PLAYER";
         this.speed = 1;
         this.bulletTimeOut = 0;
+        this.collision = {
+            type: "RECTANGLE",
+            size: {
+                left: -16,
+                top: -16,
+                right: 16,
+                bottom: 16
+            }
+        }
     }
 
     onMouseClick(mouse_x,mouse_y){
@@ -95,6 +113,15 @@ class Bullet extends GameObject{
         this.direction = Math.random()*6;
         this.speed = 1;
         this.player = null;
+        this.collision = {
+            type: "RECTANGLE",
+            size: {
+                left: -4,
+                top: -4,
+                right: 4,
+                bottom: 4
+            }
+        }
     }
 
     onTick(){
@@ -111,6 +138,12 @@ class Bullet extends GameObject{
             }
         }
 
+        var is_hitting_zombie = collision_point(this.x,this.y,Enemy);
+        if(is_hitting_zombie != null){
+            removeInstance(is_hitting_zombie.instance_id);
+            removeInstance(this.instance_id);
+        }
+
         if(this.x > 800  || this.x < 0 || this.y > 400 || this.y < 0){
             removeInstance(this.instance_id);
         }
@@ -125,7 +158,15 @@ class Enemy extends GameObject{
         this.texture = "ENEMY";
         this.direction = Math.random()*6;
         this.speed = 0.5;
-        
+        this.collision = {
+            type: "RECTANGLE",
+            size: {
+                left: -8,
+                top: -8,
+                right: 8,
+                bottom: 8
+            }
+        }
     }
 
     onTick(){
@@ -154,13 +195,15 @@ function initGame(){
     window.addEventListener("keyup", onKeyStatusChange);
     canvasElement.addEventListener("click", onMouseClick);
 
+    zombie_spawn_timer = 15;
+
     addTexture("MISSING_TEXTURE","textures/missing.png");
     addTexture("PLAYER", "textures/player.png");
     addTexture("BULLET", "textures/bullet.png");
     addTexture("ENEMY", "textures/enemy.png");
     
     createInstance(new Player(400,200));
-    createInstance(new Enemy(100,100))
+    
 
     setInterval(onGameTick, 20);
 
@@ -170,6 +213,14 @@ function initGame(){
 }
 
 function onGameTick(){
+    if(zombie_spawn_timer > 0){
+        zombie_spawn_timer--;
+    }else{
+        zombie_spawn_timer = 60;
+        random_direction = Math.random()*6;
+        createInstance(new Enemy(400 + lengthdir_x(420,random_direction),200 + lengthdir_y(420,random_direction)));
+    }
+
     roomObjects.forEach((v,k,m)=>{
         v.onTick();
     })
@@ -308,4 +359,24 @@ function lengthdir_x(dist,dir){
 
 function lengthdir_y(dist,dir){
     return dist * Math.sin(dir);
+}
+
+//COLLISON FUNCTIONS
+function collision_point(x,y,object){
+    var objects = roomObjects.values().toArray();
+    console.log(objects);
+    for(var i = 0;i< objects.length;i++){
+        var obj = objects[i];
+        console.log(obj.collision.type)
+        if(obj instanceof object){
+            
+            if(obj.collision.type == "RECTANGLE"){
+                if(x >= obj.x + obj.collision.size.left && y >= obj.y + obj.collision.size.top && x <= obj.x + obj.collision.size.right && y <= obj.y + obj.collision.size.bottom){
+                    return obj;
+                }
+            }
+        }
+    }
+
+    return null;
 }
