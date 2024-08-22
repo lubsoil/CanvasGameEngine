@@ -26,10 +26,6 @@ class GameObject{
 
     }
 
-    onMouseClick(mouse_x,mouse_y){
-
-    }
-
     drawObject(ctx){
         if(isTextureLoaded(this.texture)){
             ctx.drawImage(getTexture(this.texture), this.x-this.origin_x, this.y - this.origin_y);
@@ -58,11 +54,7 @@ class Player extends GameObject{
 
     onMouseClick(mouse_x,mouse_y){
         if(this.bulletTimeOut == 0){
-            var bullet = new Bullet(this.x,this.y);
-            bullet.direction = point_direction(this.x,this.y,mouse_x,mouse_y);
-            bullet.player = this;
-            createInstance(bullet);
-            this.bulletTimeOut = 5;
+            
         }
     }
 
@@ -95,11 +87,13 @@ class Player extends GameObject{
         if(isKeyPressed("D")){
             this.x += this.speed;
         }
-        if(isKeyPressed("space") && this.bulletTimeOut == 0){
+
+        if(isMousePressed("left") && this.bulletTimeOut == 0){
             var bullet = new Bullet(this.x,this.y);
+            bullet.direction = point_direction(this.x,this.y,mousePos.x,mousePos.y);
             bullet.player = this;
             createInstance(bullet);
-            this.bulletTimeOut = 5;
+            this.bulletTimeOut = 10;
         }
     }
 }
@@ -187,15 +181,22 @@ function initGame(){
     canvasElement = document.getElementById("gameCanvas");
     canvasElement.width = 800;
     canvasElement.height = 400;
-    keyMap = {}
+    keyboardMap = {};   //KLAWIATURA
+    mouseMap = {};  //MYSZKA
+    mousePos = {
+        x: 0,
+        y: 0
+    }
     textures = {};
     roomObjects = new Map();
     currentObjectID = 0;
     window.addEventListener("keydown", onKeyStatusChange);
     window.addEventListener("keyup", onKeyStatusChange);
-    canvasElement.addEventListener("click", onMouseClick);
+    canvasElement.addEventListener("mouseup", onMouseStatusChange);
+    canvasElement.addEventListener("mousedown", onMouseStatusChange);
+    window.addEventListener("mousemove", onMouseMove);
 
-    zombie_spawn_timer = 15;
+    enemy_spawn_timer = 15;
 
     addTexture("MISSING_TEXTURE","textures/missing.png");
     addTexture("PLAYER", "textures/player.png");
@@ -213,10 +214,11 @@ function initGame(){
 }
 
 function onGameTick(){
-    if(zombie_spawn_timer > 0){
-        zombie_spawn_timer--;
+    //SPAWNING ENEMIES
+    if(enemy_spawn_timer > 0){
+        enemy_spawn_timer--;
     }else{
-        zombie_spawn_timer = 60;
+        enemy_spawn_timer = 60;
         random_direction = Math.random()*6;
         createInstance(new Enemy(400 + lengthdir_x(420,random_direction),200 + lengthdir_y(420,random_direction)));
     }
@@ -231,7 +233,6 @@ function onGameTick(){
 */
 
 function createInstance(object){
-
     object.instance_id = currentObjectID;
     roomObjects.set(currentObjectID, object);
     currentObjectID++
@@ -286,7 +287,7 @@ function isTextureLoaded(id) {
 //INPUT
 function onKeyStatusChange(e){
     e = e || event;
-    keyMap[e.keyCode] = e.type == 'keydown';
+    keyboardMap[e.keyCode] = e.type == 'keydown';
 }
 
 function isKeyPressed(selkey){
@@ -300,7 +301,7 @@ function isKeyPressed(selkey){
         "space": 32
     };
 
-    return keyMap[selkey] || keyMap[alias[selkey]];
+    return keyboardMap[selkey] || keyboardMap[alias[selkey]];
 }
 
 function areKeysPresed(){
@@ -313,14 +314,29 @@ function areKeysPresed(){
     return true;
 }
 
-function onMouseClick(event){
-    const rect = canvasElement.getBoundingClientRect();
-    const x = event.clientX - rect.left;
-    const y = event.clientY - rect.top;
+function onMouseStatusChange(e){
+    e = e || event;
+    mouseMap[e.button] = e.type == 'mousedown';
     
-    roomObjects.forEach((v,k,m)=>{
-        v.onMouseClick(x,y);
-    })
+}
+
+function onMouseMove(e){
+    e = e || event;
+    const rect = canvasElement.getBoundingClientRect();
+    mousePos.x = e.clientX - rect.left;
+    mousePos.y = e.clientY - rect.top;
+}
+
+function isMousePressed(selkey){
+    var alias = {
+        "left":    0,
+        "middle":  1,
+        "right":   2,
+        "back":    3,
+        "forward": 4,
+    };
+
+    return mouseMap[selkey] || mouseMap[alias[selkey]];
 }
 
 //OUTPUT
@@ -364,12 +380,9 @@ function lengthdir_y(dist,dir){
 //COLLISON FUNCTIONS
 function collision_point(x,y,object){
     var objects = roomObjects.values().toArray();
-    console.log(objects);
     for(var i = 0;i< objects.length;i++){
         var obj = objects[i];
-        console.log(obj.collision.type)
         if(obj instanceof object){
-            
             if(obj.collision.type == "RECTANGLE"){
                 if(x >= obj.x + obj.collision.size.left && y >= obj.y + obj.collision.size.top && x <= obj.x + obj.collision.size.right && y <= obj.y + obj.collision.size.bottom){
                     return obj;
