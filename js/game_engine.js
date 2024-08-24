@@ -4,6 +4,7 @@ class GameObject{
         this.y = y;
         this.origin_x = 0;
         this.origin_y = 0;
+        this.depth = 0;         //DEPTH OF OBJECT - order in which object is drawed
         this.collision = {
             type: "RECTANGLE",
             size: {
@@ -13,7 +14,7 @@ class GameObject{
                 bottom: 0
             }
         }
-        this.texture = "MISSING_TEXTURE";
+        this.texture = null;
         this.instance_id = null;
     }
 
@@ -22,8 +23,10 @@ class GameObject{
     }
 
     drawObject(ctx){
-        if(isTextureLoaded(this.texture)){
-            ctx.drawImage(getTexture(this.texture), this.x-this.origin_x, this.y - this.origin_y);
+        if(this.texture != null){
+            if(isTextureLoaded(this.texture)){
+                ctx.drawImage(getTexture(this.texture), this.x-this.origin_x, this.y - this.origin_y);
+            }
         }
     }
 }
@@ -34,16 +37,23 @@ class GameObject{
 
 function initGame(){
     canvasElement = document.getElementById("gameCanvas");
-    canvasElement.width = 800;
-    canvasElement.height = 400;
+    
     keyboardMap = {};   //KLAWIATURA
     mouseMap = {};  //MYSZKA
     mousePos = {
         x: 0,
         y: 0
     }
+    room = {
+        objects: new Map(),
+        width: 800,
+        height: 600,
+        background: {
+            texture: null,
+            repeat: "NONE"
+        }
+    }
     textures = {};
-    roomObjects = new Map();
     currentObjectID = 0;
     window.addEventListener("keydown", onKeyStatusChange);
     window.addEventListener("keyup", onKeyStatusChange);
@@ -52,6 +62,9 @@ function initGame(){
     window.addEventListener("mousemove", onMouseMove);
 
     onGameInit();
+
+    canvasElement.width = room.width;
+    canvasElement.height = room.height;
 
     setInterval(tickEvent, 20);
 
@@ -65,7 +78,7 @@ function onGameInit(){}
 function tickEvent(){
     onGameTick();
 
-    roomObjects.forEach((v,k,m)=>{
+    room.objects.forEach((v,k,m)=>{
         v.onTick();
     })
 }
@@ -101,17 +114,17 @@ function isTextureLoaded(id) {
 
 function createInstance(object){
     object.instance_id = currentObjectID;
-    roomObjects.set(currentObjectID, object);
+    room.objects.set(currentObjectID, object);
     currentObjectID++
     return (currentObjectID-1);
 }
 
 function removeInstance(instance_id){
-    roomObjects.delete(instance_id);
+    room.objects.delete(instance_id);
 }
 
 function instanceFind(object,number){
-    var objects = roomObjects.values().toArray();
+    var objects = room.objects.values().toArray();
     var current = 0;
     for(var i = 0;i< objects.length;i++){
         var obj = objects[i];
@@ -124,11 +137,23 @@ function instanceFind(object,number){
     }
 }
 
+function instanceNumber(object){
+    var objects = room.objects.values().toArray();
+    var number = 0;
+    for(var i = 0;i< objects.length;i++){
+        var obj = objects[i];
+        if(obj instanceof object){
+            number++;
+        }
+    }
+
+    return number;
+}
+
 /*
-    
+    INPUT PROCESSING
 */
 
-//INPUT PROCESSING
 function onKeyStatusChange(e){
     e = e || event;
     keyboardMap[e.keyCode] = e.type == 'keydown';
@@ -190,9 +215,50 @@ function isMousePressed(selkey){
 function drawGameCanvas(){
     let ctx = canvasElement.getContext("2d");
 
-    ctx.clearRect(0, 0, 800, 400);
+    ctx.clearRect(0, 0, room.width, room.height);
 
-    roomObjects.forEach((v,k,m)=>{
+    if(room.background.texture != null){
+        if(isTextureLoaded(room.background.texture)){
+            if(room.background.repeat == "NONE"){
+                ctx.drawImage(getTexture(room.background.texture), 0, 0);
+            }else if(room.background.repeat == "REPEAT_X"){
+                var texture = getTexture(room.background.texture);
+                var image_width = texture.width;
+                var x = 0;
+                
+                while(x < room.width){
+                    ctx.drawImage(texture, x, 0);
+                    x+= image_width;
+                }
+            }else if(room.background.repeat == "REPEAT_Y"){
+                var texture = getTexture(room.background.texture);
+                var image_height = texture.height;
+                var y = 0;
+                
+                while(y < room.height){
+                    ctx.drawImage(texture, 0, y);
+                    y+= image_height;
+                }
+            }else if(room.background.repeat == "REPEAT"){
+                var texture = getTexture(room.background.texture);
+                var image_width = texture.width;
+                var image_height = texture.height;
+                var y = 0;
+                var x = 0;
+                
+                while(y < room.height){
+                    x = 0;
+                    while(x < room.width){
+                        ctx.drawImage(texture, x, y);
+                        x+=image_width;
+                    }
+                    y+= image_height;
+                }
+            }
+        }
+    }
+
+    room.objects.values().toArray().sort((a,b) => a.depth - b.depth).forEach((v,k,m)=>{
         v.drawObject(ctx);
     })
     
@@ -233,7 +299,7 @@ function lengthdir_y(dist,dir){
 
 //COLLISON FUNCTIONS
 function collision_point(x,y,object){
-    var objects = roomObjects.values().toArray();
+    var objects = room.objects.values().toArray();
     for(var i = 0;i< objects.length;i++){
         var obj = objects[i];
         if(obj instanceof object){

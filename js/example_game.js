@@ -9,6 +9,7 @@ class Player extends GameObject{
         this.origin_y = 16;
         this.texture = "PLAYER";
         this.speed = 1;
+        this.depth = 100;
         this.bulletTimeOut = 0;
         this.collision = {
             type: "RECTANGLE",
@@ -18,12 +19,6 @@ class Player extends GameObject{
                 right: 16,
                 bottom: 16
             }
-        }
-    }
-
-    onMouseClick(mouse_x,mouse_y){
-        if(this.bulletTimeOut == 0){
-            
         }
     }
 
@@ -107,7 +102,7 @@ class Bullet extends GameObject{
             removeInstance(this.instance_id);
         }
 
-        if(this.x > 800  || this.x < 0 || this.y > 400 || this.y < 0){
+        if(this.x > 800  || this.x < 0 || this.y > 600 || this.y < 0){
             removeInstance(this.instance_id);
         }
     }
@@ -149,11 +144,15 @@ function onGameInit(){
     enemy_spawn_timer = 15;
 
     addTexture("MISSING_TEXTURE","textures/missing.png");
+    addTexture("BACKGROUND", "textures/background.png");
     addTexture("PLAYER", "textures/player.png");
     addTexture("BULLET", "textures/bullet.png");
     addTexture("ENEMY", "textures/enemy.png");
+
+    room.background.texture = "BACKGROUND";
+    room.background.repeat = "REPEAT";
     
-    createInstance(new Player(400,200));
+    createInstance(new Player(400,300));
 }
 
 function onGameTick(){
@@ -162,7 +161,9 @@ function onGameTick(){
         enemy_spawn_timer--;
     }else{
         enemy_spawn_timer = 60;
-        random_direction = Math.random()*6;
-        createInstance(new Enemy(400 + lengthdir_x(420,random_direction),200 + lengthdir_y(420,random_direction)));
-    }
+        if(instanceNumber(Enemy) < 3){
+            random_direction = Math.random()*6;
+            createInstance(new Enemy(400 + lengthdir_x(420,random_direction),200 + lengthdir_y(420,random_direction)));
+        }
+    }  
 }
