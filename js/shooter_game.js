@@ -135,7 +135,7 @@ class Enemy extends GameObject{
     }
 }
 
-class ExampleGame extends Game{
+class ShotterGame extends Game{
     constructor(canvas){
         super(canvas);
     }
@@ -171,7 +171,7 @@ class ExampleGame extends Game{
 
     onGameDraw(ctx){
         ctx.font = 'bold 16px "Segue UI"';
-        ctx.fillText("Wynik: " + this.score, 10, 20);
+        ctx.fillText("Score: " + this.score, 10, 20);
         ctx.stroke();
     }
 }

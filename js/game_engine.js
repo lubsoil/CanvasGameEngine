@@ -272,7 +272,7 @@ class Game{
 
     /*
         COLLISION FUNCTIONS
-*   */
+    */
 
     collision_point(x,y,object){
         var objects = this.room.objects.values().toArray();
@@ -324,8 +324,8 @@ function lengthdir_y(dist,dir){
 
 function transformTexture(img,off_x,off_y,angle) {
     var cv    = document.createElement('canvas');
-    cv.width  = img.height;
-    cv.height = img.width;
+    cv.width  = img.width;
+    cv.height = img.height;
     var ctx   = cv.getContext('2d');
     ctx.translate(off_x, off_y);
     ctx.rotate(angle);
