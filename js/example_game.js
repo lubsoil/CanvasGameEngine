@@ -22,7 +22,7 @@ class Player extends GameObject{
         }
     }
 
-    onTick(){
+    onTick(game){
         /*
             TIMINGS
         */
@@ -33,30 +33,30 @@ class Player extends GameObject{
         /*
             PLAYER CONTROLS
         */
-        if(isKeyPressed("shift")){
+        if(game.isKeyPressed("shift")){
             this.speed = 2;
         }else{
             this.speed = 1;
         }
 
-        if(isKeyPressed("W")){
+        if(game.isKeyPressed("W")){
             this.y -= this.speed;
         }
-        if(isKeyPressed("S")){
+        if(game.isKeyPressed("S")){
             this.y += this.speed;
         }
-        if(isKeyPressed("A")){
+        if(game.isKeyPressed("A")){
             this.x -= this.speed;
         }
-        if(isKeyPressed("D")){
+        if(game.isKeyPressed("D")){
             this.x += this.speed;
         }
 
-        if(isMousePressed("left") && this.bulletTimeOut == 0){
+        if(game.isMousePressed("left") && this.bulletTimeOut == 0){
             var bullet = new Bullet(this.x,this.y);
-            bullet.direction = point_direction(this.x,this.y,mousePos.x,mousePos.y);
+            bullet.direction = point_direction(this.x,this.y,game.mousePos.x,game.mousePos.y);
             bullet.player = this;
-            createInstance(bullet);
+            game.createInstance(bullet);
             this.bulletTimeOut = 10;
         }
     }
@@ -82,7 +82,7 @@ class Bullet extends GameObject{
         }
     }
 
-    onTick(){
+    onTick(game){
         this.x = this.x + lengthdir_x(this.speed,this.direction);
         this.y = this.y + lengthdir_y(this.speed,this.direction);
 
@@ -96,14 +96,14 @@ class Bullet extends GameObject{
             }
         }
 
-        var is_hitting_zombie = collision_point(this.x,this.y,Enemy);
+        var is_hitting_zombie = game.collision_point(this.x,this.y,Enemy);
         if(is_hitting_zombie != null){
-            removeInstance(is_hitting_zombie.instance_id);
-            removeInstance(this.instance_id);
+            game.removeInstance(is_hitting_zombie.instance_id);
+            game.removeInstance(this.instance_id);
         }
 
         if(this.x > 800  || this.x < 0 || this.y > 600 || this.y < 0){
-            removeInstance(this.instance_id);
+            game.removeInstance(this.instance_id);
         }
     }
 }
@@ -127,8 +127,8 @@ class Enemy extends GameObject{
         }
     }
 
-    onTick(){
-        var player = instanceFind(Player, 0);
+    onTick(game){
+        var player = game.instanceFind(Player, 0);
 
         this.direction = point_direction(this.x,this.y,player.x,player.y);
 
@@ -137,33 +137,36 @@ class Enemy extends GameObject{
     }
 }
 
-/*
-    FUNCTIONS
-*/
-function onGameInit(){
-    enemy_spawn_timer = 15;
+class ExampleGame extends Game{
+    constructor(canvas){
+        super(canvas);
+    }
 
-    addTexture("MISSING_TEXTURE","textures/missing.png");
-    addTexture("BACKGROUND", "textures/background.png");
-    addTexture("PLAYER", "textures/player.png");
-    addTexture("BULLET", "textures/bullet.png");
-    addTexture("ENEMY", "textures/enemy.png");
-
-    room.background.texture = "BACKGROUND";
-    room.background.repeat = "REPEAT";
+    onGameInit(){
+        this.enemy_spawn_timer = 15;
     
-    createInstance(new Player(400,300));
-}
-
-function onGameTick(){
-    //SPAWNING ENEMIES
-    if(enemy_spawn_timer > 0){
-        enemy_spawn_timer--;
-    }else{
-        enemy_spawn_timer = 60;
-        if(instanceNumber(Enemy) < 3){
-            random_direction = Math.random()*6;
-            createInstance(new Enemy(400 + lengthdir_x(420,random_direction),200 + lengthdir_y(420,random_direction)));
-        }
-    }  
+        this.addTexture("MISSING_TEXTURE","textures/missing.png");
+        this.addTexture("BACKGROUND", "textures/background.png");
+        this.addTexture("PLAYER", "textures/player.png");
+        this.addTexture("BULLET", "textures/bullet.png");
+        this.addTexture("ENEMY", "textures/enemy.png");
+    
+        this.room.background.texture = "BACKGROUND";
+        this.room.background.repeat = "REPEAT";
+        
+        this.createInstance(new Player(400,300));
+    }
+    
+    onGameTick(){
+        //SPAWNING ENEMIES
+        if(this.enemy_spawn_timer > 0){
+            this.enemy_spawn_timer--;
+        }else{
+            this.enemy_spawn_timer = 60;
+            if(this.instanceNumber(Enemy) < 3){
+                var random_direction = Math.random()*6;
+                this.createInstance(new Enemy(400 + lengthdir_x(420,random_direction),200 + lengthdir_y(420,random_direction)));
+            }
+        }  
+    }
 }

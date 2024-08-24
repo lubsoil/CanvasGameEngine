@@ -4,7 +4,7 @@ class GameObject{
         this.y = y;
         this.origin_x = 0;
         this.origin_y = 0;
-        this.depth = 0;         //DEPTH OF OBJECT - order in which object is drawed
+        this.depth = 0;
         this.collision = {
             type: "RECTANGLE",
             size: {
@@ -18,259 +18,273 @@ class GameObject{
         this.instance_id = null;
     }
 
-    onTick(){
+    onTick(game){
 
     }
 
-    drawObject(ctx){
+    drawObject(game, ctx){
         if(this.texture != null){
-            if(isTextureLoaded(this.texture)){
-                ctx.drawImage(getTexture(this.texture), this.x-this.origin_x, this.y - this.origin_y);
+            if(game.isTextureLoaded(this.texture)){
+                ctx.drawImage(game.getTexture(this.texture), this.x-this.origin_x, this.y - this.origin_y);
             }
         }
     }
 }
 
-/*
-    INIT
-*/
-
-function initGame(){
-    canvasElement = document.getElementById("gameCanvas");
+class GameTexture{
     
-    keyboardMap = {};   //KLAWIATURA
-    mouseMap = {};  //MYSZKA
-    mousePos = {
-        x: 0,
-        y: 0
-    }
-    room = {
-        objects: new Map(),
-        width: 800,
-        height: 600,
-        background: {
-            texture: null,
-            repeat: "NONE"
+}
+
+class Game{
+    constructor(canvas){
+        this.canvasElement = document.getElementById(canvas);
+    
+        this.keyboardMap = {};   //KLAWIATURA
+        this.mouseMap = {};  //MYSZKA
+        this.mousePos = {
+            x: 0,
+            y: 0
         }
-    }
-    textures = {};
-    currentObjectID = 0;
-    window.addEventListener("keydown", onKeyStatusChange);
-    window.addEventListener("keyup", onKeyStatusChange);
-    canvasElement.addEventListener("mouseup", onMouseStatusChange);
-    canvasElement.addEventListener("mousedown", onMouseStatusChange);
-    window.addEventListener("mousemove", onMouseMove);
-
-    onGameInit();
-
-    canvasElement.width = room.width;
-    canvasElement.height = room.height;
-
-    setInterval(tickEvent, 20);
-
-    if (canvasElement.getContext) {
-        window.requestAnimationFrame(() => { drawGameCanvas(); });
-    }
-}
-
-function onGameInit(){}
-
-function tickEvent(){
-    onGameTick();
-
-    room.objects.forEach((v,k,m)=>{
-        v.onTick();
-    })
-}
-
-function onGameTick(){}
-
-/*
-    TEXTURES
-*/
-
-function addTexture(id,imgSrc){
-    var imageObject = {
-        image: new Image(),
-        loaded: false
-    };
-    imageObject.image.src = imgSrc;
-    imageObject.image.addEventListener("load", () => { imageObject.loaded = true; }, false);
-    textures[id] = imageObject;
-};
-
-function getTexture(id) {
-    return textures[id].image;
-};
-
-function isTextureLoaded(id) {
-    if (textures.length == 0) return false;
-    return textures[id].loaded;
-};
-
-/*
-    INSTANCES
-*/
-
-function createInstance(object){
-    object.instance_id = currentObjectID;
-    room.objects.set(currentObjectID, object);
-    currentObjectID++
-    return (currentObjectID-1);
-}
-
-function removeInstance(instance_id){
-    room.objects.delete(instance_id);
-}
-
-function instanceFind(object,number){
-    var objects = room.objects.values().toArray();
-    var current = 0;
-    for(var i = 0;i< objects.length;i++){
-        var obj = objects[i];
-        if(obj instanceof object){
-            if(current == number){
-                return obj;
+        this.room = {
+            objects: new Map(),
+            width: 800,
+            height: 600,
+            background: {
+                texture: null,
+                repeat: "NONE"
             }
-            current++;
         }
-    }
-}
-
-function instanceNumber(object){
-    var objects = room.objects.values().toArray();
-    var number = 0;
-    for(var i = 0;i< objects.length;i++){
-        var obj = objects[i];
-        if(obj instanceof object){
-            number++;
-        }
-    }
-
-    return number;
-}
-
-/*
-    INPUT PROCESSING
-*/
-
-function onKeyStatusChange(e){
-    e = e || event;
-    keyboardMap[e.keyCode] = e.type == 'keydown';
-}
-
-function isKeyPressed(selkey){
-    var alias = {
-        "ctrl":  17,
-        "shift": 16,
-        "A":     65,
-        "W":     87,
-        "S":     83,
-        "D":     68,
-        "space": 32
-    };
-
-    return keyboardMap[selkey] || keyboardMap[alias[selkey]];
-}
-
-function areKeysPresed(){
-    var keylist = arguments;
-
-    for(var i = 0; i < keylist.length; i++)
-        if(!isKeyPressed(keylist[i]))
-            return false;
-
-    return true;
-}
-
-function onMouseStatusChange(e){
-    e = e || event;
-    mouseMap[e.button] = e.type == 'mousedown';
+        this.textures = {};
+        this.currentObjectID = 0;
+        window.addEventListener("keydown", (e) => {this.onKeyStatusChange(e,this)});
+        window.addEventListener("keyup", (e) => {this.onKeyStatusChange(e,this)});
+        this.canvasElement.addEventListener("mouseup", (e) => {this.onMouseStatusChange(e,this)});
+        this.canvasElement.addEventListener("mousedown", (e) => {this.onMouseStatusChange(e,this)});
+        window.addEventListener("mousemove", (e) => {this.onMouseMove(e,this)});
     
-}
+        this.onGameInit();
+    
+        this.canvasElement.width = this.room.width;
+        this.canvasElement.height = this.room.height;
+    
+        setInterval(this.tickEvent, 20, this);
+    
+        if (this.canvasElement.getContext) {
+            window.requestAnimationFrame(() => { this.drawGameCanvas(); });
+        }
+    }
 
-function onMouseMove(e){
-    e = e || event;
-    const rect = canvasElement.getBoundingClientRect();
-    mousePos.x = e.clientX - rect.left;
-    mousePos.y = e.clientY - rect.top;
-}
+    onGameInit(){}
 
-function isMousePressed(selkey){
-    var alias = {
-        "left":    0,
-        "middle":  1,
-        "right":   2,
-        "back":    3,
-        "forward": 4,
+    onGameTick(){}
+
+    tickEvent(game){
+        game.onGameTick();
+
+        game.room.objects.forEach((v)=>{
+            v.onTick(game);
+        })
+    }
+
+    /*TEXTURES*/
+
+    addTexture(id,imgSrc){
+        var imageObject = {
+            image: new Image(),
+            loaded: false
+        };
+        imageObject.image.src = imgSrc;
+        imageObject.image.addEventListener("load", () => { imageObject.loaded = true; }, false);
+        this.textures[id] = imageObject;
     };
 
-    return mouseMap[selkey] || mouseMap[alias[selkey]];
-}
+    getTexture(id) {
+        return this.textures[id].image;
+    };
 
-/*
-    DRAW EVENT
-*/
+    isTextureLoaded(id) {
+        if (this.textures.length == 0) return false;
+        return this.textures[id].loaded;
+    };
 
-function drawGameCanvas(){
-    let ctx = canvasElement.getContext("2d");
+    /* 
+        INSTANCES
+    */
 
-    ctx.clearRect(0, 0, room.width, room.height);
-
-    if(room.background.texture != null){
-        if(isTextureLoaded(room.background.texture)){
-            if(room.background.repeat == "NONE"){
-                ctx.drawImage(getTexture(room.background.texture), 0, 0);
-            }else if(room.background.repeat == "REPEAT_X"){
-                var texture = getTexture(room.background.texture);
-                var image_width = texture.width;
-                var x = 0;
-                
-                while(x < room.width){
-                    ctx.drawImage(texture, x, 0);
-                    x+= image_width;
+    createInstance(object){
+        object.instance_id = this.currentObjectID;
+        this.room.objects.set(this.currentObjectID, object);
+        this.currentObjectID++
+        return (this.currentObjectID-1);
+    }
+    
+    removeInstance(instance_id){
+        this.room.objects.delete(instance_id);
+    }
+    
+    instanceFind(object,number){
+        var objects = this.room.objects.values().toArray();
+        var current = 0;
+        for(var i = 0;i< objects.length;i++){
+            var obj = objects[i];
+            if(obj instanceof object){
+                if(current == number){
+                    return obj;
                 }
-            }else if(room.background.repeat == "REPEAT_Y"){
-                var texture = getTexture(room.background.texture);
-                var image_height = texture.height;
-                var y = 0;
-                
-                while(y < room.height){
-                    ctx.drawImage(texture, 0, y);
-                    y+= image_height;
-                }
-            }else if(room.background.repeat == "REPEAT"){
-                var texture = getTexture(room.background.texture);
-                var image_width = texture.width;
-                var image_height = texture.height;
-                var y = 0;
-                var x = 0;
-                
-                while(y < room.height){
-                    x = 0;
+                current++;
+            }
+        }
+    }
+    
+    instanceNumber(object){
+        var objects = this.room.objects.values().toArray();
+        var number = 0;
+        for(var i = 0;i< objects.length;i++){
+            var obj = objects[i];
+            if(obj instanceof object){
+                number++;
+            }
+        }
+    
+        return number;
+    }
+
+    /*
+        INPUT PROCESSING
+    */
+
+    onKeyStatusChange(e, game){
+        e = e || event;
+        this.keyboardMap[e.keyCode] = e.type == 'keydown';
+    }
+    
+    isKeyPressed(selkey){
+        var alias = {
+            "ctrl":  17,
+            "shift": 16,
+            "A":     65,
+            "W":     87,
+            "S":     83,
+            "D":     68,
+            "space": 32
+        };
+    
+        return this.keyboardMap[selkey] || this.keyboardMap[alias[selkey]];
+    }
+    
+    areKeysPresed(){
+        var keylist = arguments;
+    
+        for(var i = 0; i < keylist.length; i++)
+            if(!isKeyPressed(keylist[i]))
+                return false;
+    
+        return true;
+    }
+    
+    onMouseStatusChange(e, game){
+        e = e || event;
+        game.mouseMap[e.button] = e.type == 'mousedown';
+        
+    }
+    
+    onMouseMove(e, game){
+        e = e || event;
+        const rect = game.canvasElement.getBoundingClientRect();
+        game.mousePos.x = e.clientX - rect.left;
+        game.mousePos.y = e.clientY - rect.top;
+    }
+    
+    isMousePressed(selkey){
+        var alias = {
+            "left":    0,
+            "middle":  1,
+            "right":   2,
+            "back":    3,
+            "forward": 4,
+        };
+    
+        return this.mouseMap[selkey] || this.mouseMap[alias[selkey]];
+    }
+
+    /*
+        DRAWING GAME
+    */
+
+    drawGameCanvas(){
+        let ctx = this.canvasElement.getContext("2d");
+    
+        ctx.clearRect(0, 0, this.room.width, this.room.height);
+    
+        //DRAWING BACKGROUND
+        if(this.room.background.texture != null){
+            if(this.isTextureLoaded(this.room.background.texture)){
+                if(this.room.background.repeat == "NONE"){
+                    ctx.drawImage(getTexture(this.room.background.texture), 0, 0);
+                }else if(this.room.background.repeat == "REPEAT_X"){
+                    var texture = this.getTexture(this.room.background.texture);
+                    var image_width = texture.width;
+                    var x = 0;
+                    
                     while(x < room.width){
-                        ctx.drawImage(texture, x, y);
-                        x+=image_width;
+                        ctx.drawImage(texture, x, 0);
+                        x+= image_width;
                     }
-                    y+= image_height;
+                }else if(this.room.background.repeat == "REPEAT_Y"){
+                    var texture = this.getTexture(this.room.background.texture);
+                    var image_height = texture.height;
+                    var y = 0;
+                    
+                    while(y < this.room.height){
+                        ctx.drawImage(texture, 0, y);
+                        y+= image_height;
+                    }
+                }else if(this.room.background.repeat == "REPEAT"){
+                    var texture = this.getTexture(this.room.background.texture);
+                    var image_width = texture.width;
+                    var image_height = texture.height;
+                    var y = 0;
+                    var x = 0;
+                    
+                    while(y < this.room.height){
+                        x = 0;
+                        while(x < this.room.width){
+                            ctx.drawImage(texture, x, y);
+                            x+=image_width;
+                        }
+                        y+= image_height;
+                    }
                 }
             }
         }
+    
+        //DRAWING OBJECTS
+        this.room.objects.values().toArray().sort((a,b) => a.depth - b.depth).forEach((v,k,m)=>{
+            v.drawObject(this, ctx);
+        })
+    
+        window.requestAnimationFrame(() => { this.drawGameCanvas(); });
     }
 
-    room.objects.values().toArray().sort((a,b) => a.depth - b.depth).forEach((v,k,m)=>{
-        v.drawObject(ctx);
-    })
-    
-    
+    /*
+        COLLISION FUNCTIONS
+*   */
 
-    //DRAWING LINE
-    /*ctx.beginPath();
-    ctx.fillStyle = "green";
-    ctx.fillRect(0, 399, 800, 400);
-    ctx.stroke();*/
+    collision_point(x,y,object){
+        var objects = this.room.objects.values().toArray();
+        for(var i = 0;i< objects.length;i++){
+            var obj = objects[i];
+            if(obj instanceof object){
+                if(obj.collision.type == "RECTANGLE"){
+                    if(x >= obj.x + obj.collision.size.left && y >= obj.y + obj.collision.size.top && x <= obj.x + obj.collision.size.right && y <= obj.y + obj.collision.size.bottom){
+                        return obj;
+                    }
+                }
+            }
+        }
 
-    window.requestAnimationFrame(() => { drawGameCanvas(); });
+        return null;
+    }
 }
 
 /*
@@ -291,25 +305,4 @@ function lengthdir_x(dist,dir){
 
 function lengthdir_y(dist,dir){
     return dist * Math.sin(dir);
-}
-
-/*
-    COLLISION FUNCTIONS
-*/
-
-//COLLISON FUNCTIONS
-function collision_point(x,y,object){
-    var objects = room.objects.values().toArray();
-    for(var i = 0;i< objects.length;i++){
-        var obj = objects[i];
-        if(obj instanceof object){
-            if(obj.collision.type == "RECTANGLE"){
-                if(x >= obj.x + obj.collision.size.left && y >= obj.y + obj.collision.size.top && x <= obj.x + obj.collision.size.right && y <= obj.y + obj.collision.size.bottom){
-                    return obj;
-                }
-            }
-        }
-    }
-
-    return null;
 }
