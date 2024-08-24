@@ -2,8 +2,7 @@ class GameObject{
     constructor(x,y) {
         this.x = x;
         this.y = y;
-        this.origin_x = 0;
-        this.origin_y = 0;
+        this.angle = 0;
         this.depth = 0;
         this.collision = {
             type: "RECTANGLE",
@@ -23,16 +22,21 @@ class GameObject{
     }
 
     drawObject(game, ctx){
-        if(this.texture != null){
-            if(game.isTextureLoaded(this.texture)){
-                ctx.drawImage(game.getTexture(this.texture), this.x-this.origin_x, this.y - this.origin_y);
-            }
-        }
+        drawTexture(ctx,game,this.texture,this.x, this.y,this.angle);
     }
 }
 
 class GameTexture{
-    
+    constructor(source,off_x,off_y){
+        this.image = new Image();
+        this.loaded = false;
+
+        this.origin_x = off_x;
+        this.origin_y = off_y;
+        
+        this.image.src = source;
+        this.image.addEventListener("load", () => { this.loaded = true; });
+    }
 }
 
 class Game{
@@ -78,6 +82,8 @@ class Game{
 
     onGameTick(){}
 
+    onGameDraw(ctx){}
+
     tickEvent(game){
         game.onGameTick();
 
@@ -86,20 +92,16 @@ class Game{
         })
     }
 
-    /*TEXTURES*/
+    /*
+        TEXTURES
+    */
 
-    addTexture(id,imgSrc){
-        var imageObject = {
-            image: new Image(),
-            loaded: false
-        };
-        imageObject.image.src = imgSrc;
-        imageObject.image.addEventListener("load", () => { imageObject.loaded = true; }, false);
-        this.textures[id] = imageObject;
+    addTexture(id,texture){
+        this.textures[id] = texture;
     };
 
     getTexture(id) {
-        return this.textures[id].image;
+        return this.textures[id];
     };
 
     isTextureLoaded(id) {
@@ -219,10 +221,10 @@ class Game{
         //DRAWING BACKGROUND
         if(this.room.background.texture != null){
             if(this.isTextureLoaded(this.room.background.texture)){
-                if(this.room.background.repeat == "NONE"){
-                    ctx.drawImage(getTexture(this.room.background.texture), 0, 0);
-                }else if(this.room.background.repeat == "REPEAT_X"){
-                    var texture = this.getTexture(this.room.background.texture);
+                if(this.room.background.repeat == BACKGROUND_REPEAT.NONE){
+                    ctx.drawImage(getTexture(this.room.background.texture).image, 0, 0);
+                }else if(this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_X){
+                    var texture = this.getTexture(this.room.background.texture).image;
                     var image_width = texture.width;
                     var x = 0;
                     
@@ -230,8 +232,8 @@ class Game{
                         ctx.drawImage(texture, x, 0);
                         x+= image_width;
                     }
-                }else if(this.room.background.repeat == "REPEAT_Y"){
-                    var texture = this.getTexture(this.room.background.texture);
+                }else if(this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_Y){
+                    var texture = this.getTexture(this.room.background.texture).image;
                     var image_height = texture.height;
                     var y = 0;
                     
@@ -239,8 +241,8 @@ class Game{
                         ctx.drawImage(texture, 0, y);
                         y+= image_height;
                     }
-                }else if(this.room.background.repeat == "REPEAT"){
-                    var texture = this.getTexture(this.room.background.texture);
+                }else if(this.room.background.repeat == BACKGROUND_REPEAT.REPEAT){
+                    var texture = this.getTexture(this.room.background.texture).image;
                     var image_width = texture.width;
                     var image_height = texture.height;
                     var y = 0;
@@ -262,6 +264,8 @@ class Game{
         this.room.objects.values().toArray().sort((a,b) => a.depth - b.depth).forEach((v,k,m)=>{
             v.drawObject(this, ctx);
         })
+
+        this.onGameDraw(ctx);
     
         window.requestAnimationFrame(() => { this.drawGameCanvas(); });
     }
@@ -288,6 +292,17 @@ class Game{
 }
 
 /*
+    ENUMS
+*/
+
+BACKGROUND_REPEAT = {
+    NONE: "NONE",
+    REPEAT_X: "REPEAT_X",
+    REPEAT_Y: "REPEAT_Y",
+    REPEAT: "REPEAT"
+};
+
+/*
     MATH FUNCTIONS
 */
 
@@ -305,4 +320,25 @@ function lengthdir_x(dist,dir){
 
 function lengthdir_y(dist,dir){
     return dist * Math.sin(dir);
+}
+
+function transformTexture(img,off_x,off_y,angle) {
+    var cv    = document.createElement('canvas');
+    cv.width  = img.height;
+    cv.height = img.width;
+    var ctx   = cv.getContext('2d');
+    ctx.translate(off_x, off_y);
+    ctx.rotate(angle);
+    ctx.drawImage(img, -off_x, -off_y);
+
+    return cv;
+ }
+
+function drawTexture(ctx,game,texture,x,y,angle){
+    if(texture != null){
+        if(game.isTextureLoaded(texture)){
+            var textureObject = game.getTexture(texture);
+            ctx.drawImage(transformTexture(textureObject.image,textureObject.origin_x,textureObject.origin_y,angle),x-textureObject.origin_x,y-textureObject.origin_y);
+        }
+    }
 }

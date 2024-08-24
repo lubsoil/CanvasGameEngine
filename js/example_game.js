@@ -5,8 +5,6 @@
 class Player extends GameObject{
     constructor(x,y){
         super(x,y);
-        this.origin_x = 16;
-        this.origin_y = 16;
         this.texture = "PLAYER";
         this.speed = 1;
         this.depth = 100;
@@ -65,8 +63,6 @@ class Player extends GameObject{
 class Bullet extends GameObject{
     constructor(x,y){
         super(x,y);
-        this.origin_x = 4;
-        this.origin_y = 4;
         this.texture = "BULLET";
         this.direction = Math.random()*6;
         this.speed = 1;
@@ -96,9 +92,12 @@ class Bullet extends GameObject{
             }
         }
 
-        var is_hitting_zombie = game.collision_point(this.x,this.y,Enemy);
-        if(is_hitting_zombie != null){
-            game.removeInstance(is_hitting_zombie.instance_id);
+        this.angle += 0.1;
+
+        var is_hitting_enemy = game.collision_point(this.x,this.y,Enemy);
+        if(is_hitting_enemy != null){
+            game.score++;
+            game.removeInstance(is_hitting_enemy.instance_id);
             game.removeInstance(this.instance_id);
         }
 
@@ -111,8 +110,6 @@ class Bullet extends GameObject{
 class Enemy extends GameObject{
     constructor(x,y){
         super(x,y);
-        this.origin_x = 8;
-        this.origin_y = 8;
         this.texture = "ENEMY";
         this.direction = Math.random()*6;
         this.speed = 0.5;
@@ -128,6 +125,7 @@ class Enemy extends GameObject{
     }
 
     onTick(game){
+        this.angle+=0.5;
         var player = game.instanceFind(Player, 0);
 
         this.direction = point_direction(this.x,this.y,player.x,player.y);
@@ -143,16 +141,17 @@ class ExampleGame extends Game{
     }
 
     onGameInit(){
+        this.score = 0;
         this.enemy_spawn_timer = 15;
     
-        this.addTexture("MISSING_TEXTURE","textures/missing.png");
-        this.addTexture("BACKGROUND", "textures/background.png");
-        this.addTexture("PLAYER", "textures/player.png");
-        this.addTexture("BULLET", "textures/bullet.png");
-        this.addTexture("ENEMY", "textures/enemy.png");
+        this.addTexture("MISSING_TEXTURE",new GameTexture("textures/missing.png",0,0));
+        this.addTexture("BACKGROUND", new GameTexture("textures/background.png",0,0));
+        this.addTexture("PLAYER", new GameTexture("textures/player.png",16,16));
+        this.addTexture("BULLET", new GameTexture("textures/bullet.png",4,4));
+        this.addTexture("ENEMY", new GameTexture("textures/enemy.png",8,8));
     
         this.room.background.texture = "BACKGROUND";
-        this.room.background.repeat = "REPEAT";
+        this.room.background.repeat = BACKGROUND_REPEAT.REPEAT;
         
         this.createInstance(new Player(400,300));
     }
@@ -163,10 +162,16 @@ class ExampleGame extends Game{
             this.enemy_spawn_timer--;
         }else{
             this.enemy_spawn_timer = 60;
-            if(this.instanceNumber(Enemy) < 3){
+            if(this.instanceNumber(Enemy) < 5){
                 var random_direction = Math.random()*6;
                 this.createInstance(new Enemy(400 + lengthdir_x(420,random_direction),200 + lengthdir_y(420,random_direction)));
             }
         }  
+    }
+
+    onGameDraw(ctx){
+        ctx.font = 'bold 16px "Segue UI"';
+        ctx.fillText("Wynik: " + this.score, 10, 20);
+        ctx.stroke();
     }
 }
