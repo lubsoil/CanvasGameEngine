@@ -2,11 +2,46 @@
     Game Objects
 */
 
-class Sheep extends GameObject{
+class DragabbleObject extends GameObject{
+    constructor(x,y){
+        super(x,y);
+
+        this.is_dragged = false;
+        this.dragged_direction = 0;
+    }
+
+    onTick(game){
+        if(game.mouse_current_object != null){
+            if(game.mouse_current_object.instance_id == this.instance_id){
+                this.is_dragged = true;
+                if(this.dragged_direction == 0){
+                    if(this.angle < -0.3){
+                        this.dragged_direction = 1;
+                    }else{
+                        this.angle -= 0.03;
+                    }
+                }else{
+                    if(this.angle > 0.3){
+                        this.dragged_direction = 0;
+                    }else{
+                        this.angle += 0.03;
+                    }
+                }
+            }
+        }else{
+            this.is_dragged = false;
+            this.angle = 0;
+        }
+        
+    }
+}
+
+class Sheep extends DragabbleObject{
     constructor(x,y){
         super(x,y);
         this.texture = "SHEEP";
         this.depth = y*10;
+        this.angle = 12;
         this.collision = {
             type: "RECTANGLE",
             size: {
@@ -16,14 +51,27 @@ class Sheep extends GameObject{
                 bottom: 12
             }
         }
+        this.has_been_draged = false;
     }
 
-    onTick(){
+    onTick(game){
+        super.onTick(game);
+        if(this.is_dragged && !this.has_been_draged){
+            var soundObject = game.getSound("SHEEP");
+            soundObject.play(true);
+            
+            this.has_been_draged = true;
+        }else if(!this.is_dragged && this.has_been_draged){
+            var soundObject = game.getSound("SHEEP");
+            soundObject.stop();
+
+            this.has_been_draged = false;
+        }
         this.depth = this.y*10;
     }
 }
 
-class Barrel extends GameObject{
+class Barrel extends DragabbleObject{
     constructor(x,y){
         super(x,y);
         this.texture = "BARREL";
@@ -39,8 +87,9 @@ class Barrel extends GameObject{
         }
     }
 
-    onTick(){
-        this.depth = this.y*10+1;
+    onTick(game){
+        super.onTick(game);
+        this.depth = this.y*10+2;
     }
 }
 
@@ -71,11 +120,6 @@ class EscapingSheepsGame extends Game{
     }
 
     onGameInit(){
-        this.score = 0;
-        this.generated = false;
-        this.anwser = 0;
-        this.keypress_cooldown = 20;
-
         this.room.width = 800;
         this.room.height = 600;
 
@@ -91,6 +135,7 @@ class EscapingSheepsGame extends Game{
         this.addTexture("BARREL", new GameTexture("textures/barrel.png",16,16));
         this.addTexture("TREE", new GameTexture("textures/tree.png",24,96));
 
+        this.addSound("SHEEP",new GameSound("sounds/sheep.mp3"));
 
         for(var i=0;i<30;i++){
             var item_random = Math.floor(Math.random()*2);
@@ -104,11 +149,10 @@ class EscapingSheepsGame extends Game{
             var sheep_x = Math.floor(Math.random()*800);
             var sheep_y = Math.floor(Math.random()*600);
             var barrel_random = Math.floor(Math.random()*2);
-            this.createInstance(new Sheep(sheep_x, sheep_y));
             if(barrel_random == 0){
                 this.createInstance(new Barrel(sheep_x, sheep_y));
             }
-            
+            this.createInstance(new Sheep(sheep_x, sheep_y));
         }
     }
     
@@ -116,10 +160,8 @@ class EscapingSheepsGame extends Game{
         if(!this.left_mouse_pressed){
             if(this.isMousePressed("left")){
                 this.left_mouse_pressed = true;
-                var movable_object = this.collision_point(this.mousePos.x,this.mousePos.y,Barrel);
-                if(movable_object == null){
-                    movable_object = this.collision_point(this.mousePos.x,this.mousePos.y,Sheep);
-                }
+                var movable_object = this.collision_point(this.mousePos.x,this.mousePos.y,DragabbleObject);
+
                 if(movable_object != null){
                     this.mouse_current_object = movable_object;
                 }

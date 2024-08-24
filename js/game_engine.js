@@ -39,6 +39,43 @@ class GameTexture{
     }
 }
 
+class GameSound{
+    constructor(source){
+        this.sound = new Audio(source);
+        this.duration = null;
+        this.loaded = false;
+        this.startOnLoading = false;
+
+        this.sound.addEventListener("canplaythrough", () => { 
+            this.loaded = true; 
+            this.duration = this.sound.duration;
+            if(this.startOnLoading){
+                this.sound.play();
+            }
+        });
+    }
+
+    play(loop = false){
+        if(this.loaded){
+            this.sound.loop = loop;
+            this.sound.play();
+        }else{
+            this.startOnLoading = true;
+        }
+    }
+
+    pause(){
+        if(this.loaded){
+            this.sound.pause();
+        }
+    }
+
+    stop(){
+        this.sound.loop = false;
+        this.sound.currentTime = this.duration;
+    }
+}
+
 class Game{
     constructor(canvas){
         this.canvasElement = document.getElementById(canvas);
@@ -59,6 +96,7 @@ class Game{
             }
         }
         this.textures = {};
+        this.sounds = {};
         this.currentObjectID = 0;
         window.addEventListener("keydown", (e) => {this.onKeyStatusChange(e,this)});
         window.addEventListener("keyup", (e) => {this.onKeyStatusChange(e,this)});
@@ -107,6 +145,23 @@ class Game{
     isTextureLoaded(id) {
         if (this.textures.length == 0) return false;
         return this.textures[id].loaded;
+    };
+
+    /*
+        TEXTURES
+    */
+
+    addSound(id,sound){
+        this.sounds[id] = sound;
+    };
+
+    getSound(id) {
+        return this.sounds[id];
+    };
+
+    isSoundLoaded(id) {
+        if (this.sounds.length == 0) return false;
+        return this.sounds[id].loaded;
     };
 
     /* 
@@ -324,10 +379,10 @@ function lengthdir_y(dist,dir){
 
 function transformTexture(img,off_x,off_y,angle) {
     var cv    = document.createElement('canvas');
-    cv.width  = img.width;
-    cv.height = img.height;
+    cv.width  = img.width*2;
+    cv.height = img.height*2;
     var ctx   = cv.getContext('2d');
-    ctx.translate(off_x, off_y);
+    ctx.translate((img.width/2)+off_x, (img.width/2)+off_y);
     ctx.rotate(angle);
     ctx.drawImage(img, -off_x, -off_y);
 
@@ -338,7 +393,7 @@ function drawTexture(ctx,game,texture,x,y,angle){
     if(texture != null){
         if(game.isTextureLoaded(texture)){
             var textureObject = game.getTexture(texture);
-            ctx.drawImage(transformTexture(textureObject.image,textureObject.origin_x,textureObject.origin_y,angle),x-textureObject.origin_x,y-textureObject.origin_y);
+            ctx.drawImage(transformTexture(textureObject.image,textureObject.origin_x,textureObject.origin_y,angle),x-textureObject.origin_x - (textureObject.image.width/2),y-textureObject.origin_y - (textureObject.image.height/2));
         }
     }
 }
