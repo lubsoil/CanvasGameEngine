@@ -358,6 +358,43 @@ class Game {
 
         return null;
     }
+
+    collision_rectangle(x1, y1, x2, y2, object) {
+        var objects = this.room.objects.values().toArray();
+        for (var i = 0; i < objects.length; i++) {
+            var obj = objects[i];
+            if (obj instanceof object) {
+                if (obj.collision.type == "RECTANGLE") {
+                    var sx = x1 < x2 ? x1 : x2;
+                    var sy = y1 < y2 ? y1 : y2;
+                    var ex = x1 > x2 ? x1 : x2;
+                    var ey = y1 > y2 ? y1 : y2;
+    
+                    var obj_sx = obj.x + obj.collision.size.left;
+                    var obj_sx = obj.x + obj.collision.size.top;
+                    var obj_ex = obj.x + obj.collision.size.right;
+                    var obj_ex = obj.x + obj.collision.size.bottom;
+    
+                    var is_x = false;
+                    var is_y = false;
+    
+                    if((sx >= obj_sx && sx <= obj_ex) || (ex >= obj_sx && ex <= obj_ex)){
+                        is_x = true;
+                    }
+    
+                    if((sy >= obj_sy && sy <= obj_ey) || (ey >= obj_sy && ey <= obj_ey)){
+                        is_y = true;
+                    }
+    
+                    if(is_x && is_y){
+                        return obj;
+                    }
+                }
+            }
+        }
+    
+        return null;
+    }
 }
 
 /*
