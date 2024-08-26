@@ -94,7 +94,7 @@ class Bullet extends GameObject {
 
         this.angle += 0.1;
 
-        var is_hitting_enemy = game.collision_point(this.x, this.y, Enemy);
+        var is_hitting_enemy = game.collision_rectangle(this.x+this.collision.size.left, this.y+this.collision.size.top,this.x+this.collision.size.right,this.y+this.collision.size.bottom, Enemy);
         if (is_hitting_enemy != null) {
             game.score++;
             game.removeInstance(is_hitting_enemy.instance_id);
