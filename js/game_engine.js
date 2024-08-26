@@ -371,9 +371,9 @@ class Game {
                     var ey = y1 > y2 ? y1 : y2;
     
                     var obj_sx = obj.x + obj.collision.size.left;
-                    var obj_sx = obj.x + obj.collision.size.top;
+                    var obj_sy = obj.y + obj.collision.size.top;
                     var obj_ex = obj.x + obj.collision.size.right;
-                    var obj_ex = obj.x + obj.collision.size.bottom;
+                    var obj_ey = obj.y + obj.collision.size.bottom;
     
                     var is_x = false;
                     var is_y = false;
