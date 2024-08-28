@@ -186,11 +186,11 @@ class SpaceCleanerGame extends Game {
         this.segmentTimeout = 100;
 
 
-        this.addTexture("ASTEROID", new GameTexture("asteroid.png", 16, 16, 32, 32));
-        this.addTexture("CUBEALIEN", new GameTexture("cubealien.png", 16, 16, 32, 32));
-        this.addTexture("UFO", new GameTexture("ufo.png", 24, 24, 48, 48));
-        this.addTexture("SPACESHIP", new GameTexture("spaceship.png", 32, 32, 64, 64));
-        this.addTexture("SPACE", new GameTexture("space.png", 0, 0));
+        this.addTexture("ASTEROID", new GameTexture("textures/asteroid.png", 16, 16, 32, 32));
+        this.addTexture("CUBEALIEN", new GameTexture("textures/cubealien.png", 16, 16, 32, 32));
+        this.addTexture("UFO", new GameTexture("textures/ufo.png", 24, 24, 48, 48));
+        this.addTexture("SPACESHIP", new GameTexture("textures/spaceship.png", 32, 32, 64, 64));
+        this.addTexture("SPACE", new GameTexture("textures/space.png", 0, 0));
 
         this.player = new Spaceship(128, 225);
         this.createInstance(this.player);
