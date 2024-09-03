@@ -109,6 +109,11 @@ class Game {
                 repeat: "NONE"
             }
         }
+        this.initLoading = {
+            finished: false,
+            progress: 0,
+            maxProgress: 0,
+        }
         this.textures = {};
         this.sounds = {};
         this.currentObjectID = 0;
@@ -122,6 +127,11 @@ class Game {
 
         this.canvasElement.width = this.room.width;
         this.canvasElement.height = this.room.height;
+
+        this.initLoading.maxProgress = Object.values(this.textures).length + Object.values(this.sounds).length;
+        if(this.initLoading.maxProgress == 0){
+            this.initLoading.finished = true;
+        }
 
         setInterval(this.tickEvent, 20, this);
 
@@ -137,6 +147,27 @@ class Game {
     onGameDraw(ctx) { }
 
     tickEvent(game) {
+        if(!game.initLoading.finished){
+            var loaded = 0;
+            Object.values(game.textures).forEach((val) => {
+                if(val.loaded){
+                    loaded++;
+                }
+            });
+            Object.values(game.sounds).forEach((val) => {
+                if(val.loaded){
+                    loaded++;
+                }
+            });
+            game.initLoading.progress = loaded;
+            if(game.initLoading.progress >= game.initLoading.maxProgress){
+                game.initLoading.finished = true;
+            }else{
+                return;
+            }
+            
+        }
+
         game.onGameTick();
 
         game.room.objects.forEach((v) => {
@@ -287,54 +318,62 @@ class Game {
 
         ctx.clearRect(0, 0, this.room.width, this.room.height);
 
-        //DRAWING BACKGROUND
-        if (this.room.background.texture != null) {
-            if (this.isTextureLoaded(this.room.background.texture)) {
-                if (this.room.background.repeat == BACKGROUND_REPEAT.NONE) {
-                    ctx.drawImage(getTexture(this.room.background.texture).image, 0, 0);
-                } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_X) {
-                    var texture = this.getTexture(this.room.background.texture).image;
-                    var image_width = texture.width;
-                    var x = 0;
+        if(!this.initLoading.finished){
+            ctx.fillStyle = "white";
+            ctx.fillText("Loading " + Math.round((this.initLoading.progress/this.initLoading.maxProgress)*100) + "%", 5, 10);
+            ctx.stroke();
+        }else{
+            //DRAWING BACKGROUND
+            if (this.room.background.texture != null) {
+                if (this.isTextureLoaded(this.room.background.texture)) {
+                    if (this.room.background.repeat == BACKGROUND_REPEAT.NONE) {
+                        ctx.drawImage(getTexture(this.room.background.texture).image, 0, 0);
+                    } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_X) {
+                        var texture = this.getTexture(this.room.background.texture).image;
+                        var image_width = texture.width;
+                        var x = 0;
 
-                    while (x < room.width) {
-                        ctx.drawImage(texture, x, 0);
-                        x += image_width;
-                    }
-                } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_Y) {
-                    var texture = this.getTexture(this.room.background.texture).image;
-                    var image_height = texture.height;
-                    var y = 0;
-
-                    while (y < this.room.height) {
-                        ctx.drawImage(texture, 0, y);
-                        y += image_height;
-                    }
-                } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT) {
-                    var texture = this.getTexture(this.room.background.texture).image;
-                    var image_width = texture.width;
-                    var image_height = texture.height;
-                    var y = 0;
-                    var x = 0;
-
-                    while (y < this.room.height) {
-                        x = 0;
-                        while (x < this.room.width) {
-                            ctx.drawImage(texture, x, y);
+                        while (x < room.width) {
+                            ctx.drawImage(texture, x, 0);
                             x += image_width;
                         }
-                        y += image_height;
+                    } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_Y) {
+                        var texture = this.getTexture(this.room.background.texture).image;
+                        var image_height = texture.height;
+                        var y = 0;
+
+                        while (y < this.room.height) {
+                            ctx.drawImage(texture, 0, y);
+                            y += image_height;
+                        }
+                    } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT) {
+                        var texture = this.getTexture(this.room.background.texture).image;
+                        var image_width = texture.width;
+                        var image_height = texture.height;
+                        var y = 0;
+                        var x = 0;
+
+                        while (y < this.room.height) {
+                            x = 0;
+                            while (x < this.room.width) {
+                                ctx.drawImage(texture, x, y);
+                                x += image_width;
+                            }
+                            y += image_height;
+                        }
                     }
                 }
             }
+
+            //DRAWING OBJECTS
+            this.room.objects.values().toArray().sort((a, b) => a.depth - b.depth).forEach((v, k, m) => {
+                v.drawObject(this, ctx);
+            })
+
+            this.onGameDraw(ctx);
         }
 
-        //DRAWING OBJECTS
-        this.room.objects.values().toArray().sort((a, b) => a.depth - b.depth).forEach((v, k, m) => {
-            v.drawObject(this, ctx);
-        })
-
-        this.onGameDraw(ctx);
+        
 
         window.requestAnimationFrame(() => { this.drawGameCanvas(); });
     }
