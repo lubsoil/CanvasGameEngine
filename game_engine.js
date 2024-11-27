@@ -123,6 +123,7 @@ class Game {
         this.canvasElement.addEventListener("mousedown", (e) => { this.onMouseStatusChange(e, this) });
         this.canvasElement.addEventListener("touchstart", (e) => { this.onTouchStatusChange(e, this) });
         this.canvasElement.addEventListener("touchend", (e) => { this.onTouchStatusChange(e, this) });
+        this.canvasElement.addEventListener("touchcancel", (e) => { this.onTouchStatusChange(e, this) });
         window.addEventListener("touchmove", (e) => { this.onTouchMove(e, this) });
         window.addEventListener("mousemove", (e) => { this.onMouseMove(e, this) });
 
