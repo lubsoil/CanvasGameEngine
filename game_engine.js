@@ -121,6 +121,9 @@ class Game {
         window.addEventListener("keyup", (e) => { this.onKeyStatusChange(e, this) });
         this.canvasElement.addEventListener("mouseup", (e) => { this.onMouseStatusChange(e, this) });
         this.canvasElement.addEventListener("mousedown", (e) => { this.onMouseStatusChange(e, this) });
+        this.canvasElement.addEventListener("touchstart", (e) => { this.onTouchStatusChange(e, this) });
+        this.canvasElement.addEventListener("touchend", (e) => { this.onTouchStatusChange(e, this) });
+        window.addEventListener("touchmove", (e) => { this.onTouchMove(e, this) });
         window.addEventListener("mousemove", (e) => { this.onMouseMove(e, this) });
 
         this.onGameInit();
@@ -256,7 +259,6 @@ class Game {
     */
 
     onKeyStatusChange(e, game) {
-        e = e || event;
         this.keyboardMap[e.keyCode] = e.type == 'keydown';
     }
 
@@ -285,16 +287,23 @@ class Game {
     }
 
     onMouseStatusChange(e, game) {
-        e = e || event;
         game.mouseMap[e.button] = e.type == 'mousedown';
-
     }
 
     onMouseMove(e, game) {
-        e = e || event;
         const rect = game.canvasElement.getBoundingClientRect();
         game.mousePos.x = e.clientX - rect.left;
         game.mousePos.y = e.clientY - rect.top;
+    }
+
+    onTouchStatusChange(e, game) {
+        game.mouseMap[0] = e.type == 'touchstart';
+    }
+
+    onTouchMove(e, game) {
+        const rect = game.canvasElement.getBoundingClientRect();
+        game.mousePos.x = e.touches[0].clientX - rect.left;
+        game.mousePos.y = e.touches[0].clientY - rect.top;
     }
 
     isMousePressed(selkey) {
