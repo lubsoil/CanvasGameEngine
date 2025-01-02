@@ -178,6 +178,9 @@ class SpaceCleanerGame extends Game {
         this.room.background.texture = "SPACE";
         this.room.background.repeat = BACKGROUND_REPEAT.REPEAT;
 
+        this.camera.width = 800;
+        this.camera.height = 450;
+
         this.score = 0;
         this.highScore = 0;
 

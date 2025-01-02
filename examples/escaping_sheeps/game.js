@@ -121,8 +121,11 @@ class EscapingSheepsGame extends Game {
     }
 
     onGameInit() {
-        this.room.width = 800;
-        this.room.height = 600;
+        this.room.width = 1600;
+        this.room.height = 1600;
+
+        this.camera.width = 800;
+        this.camera.height = 600;
 
         this.room.background.texture = "BACKGROUND";
         this.room.background.repeat = BACKGROUND_REPEAT.REPEAT;
@@ -138,17 +141,25 @@ class EscapingSheepsGame extends Game {
 
         this.addSound("SHEEP", new GameSound("sounds/sheep.mp3"));
 
-        for (var i = 0; i < 30; i++) {
+        this.gameCamera = {
+            startX: 0,
+            startY: 0,
+            startMouseX: 0,
+            startMouseY:0,
+            pressed: false
+        }
+
+        for (var i = 0; i < 50; i++) {
             var item_random = Math.floor(Math.random() * 2);
             if (item_random == 0) {
-                this.createInstance(new Tree(Math.floor(Math.random() * 800), Math.floor(Math.random() * 600)));
+                this.createInstance(new Tree(Math.floor(Math.random() * 1600), Math.floor(Math.random() * 1600)));
             } else {
-                this.createInstance(new Barrel(Math.floor(Math.random() * 800), Math.floor(Math.random() * 600)));
+                this.createInstance(new Barrel(Math.floor(Math.random() * 1600), Math.floor(Math.random() * 1600)));
             }
         }
-        for (var i = 0; i < 6; i++) {
-            var sheep_x = Math.floor(Math.random() * 800);
-            var sheep_y = Math.floor(Math.random() * 600);
+        for (var i = 0; i < 10; i++) {
+            var sheep_x = Math.floor(Math.random() * 1600);
+            var sheep_y = Math.floor(Math.random() * 1600);
             var barrel_random = Math.floor(Math.random() * 2);
             if (barrel_random == 0) {
                 this.createInstance(new Barrel(sheep_x, sheep_y));
@@ -158,10 +169,41 @@ class EscapingSheepsGame extends Game {
     }
 
     onGameTick() {
+
+        if(this.isMousePressed("right")){
+            if(!this.gameCamera.pressed){
+                this.gameCamera.startX = this.camera.x;
+                this.gameCamera.startY = this.camera.y;
+                this.gameCamera.startMouseX = this.mousePos.x;
+                this.gameCamera.startMouseY = this.mousePos.y;
+                this.gameCamera.pressed = true;
+            }
+
+            this.camera.x = this.gameCamera.startX + (this.mousePos.x - this.gameCamera.startMouseX)
+            this.camera.y = this.gameCamera.startY + (this.mousePos.y - this.gameCamera.startMouseY)
+
+            if(this.camera.x < 0){
+                this.camera.x = 0;
+            }
+            if(this.camera.y < 0){
+                this.camera.y = 0;
+            }
+            if(this.camera.x > this.room.width-this.camera.width){
+                this.camera.x = this.room.width-this.camera.width;
+            }
+            if(this.camera.y > this.room.height-this.camera.height){
+                this.camera.y = this.room.height-this.camera.height;
+            }
+        }else{
+            if(this.gameCamera.pressed){
+                this.gameCamera.pressed = false;
+            }
+        }
+
         if (!this.left_mouse_pressed) {
             if (this.isMousePressed("left")) {
                 this.left_mouse_pressed = true;
-                var movable_object = this.collision_point(this.mousePos.x, this.mousePos.y, DragabbleObject);
+                var movable_object = this.collision_point(this.mouseRoomPos.x, this.mouseRoomPos.y, DragabbleObject);
 
                 if (movable_object != null) {
                     this.mouse_current_object = movable_object;
@@ -174,15 +216,15 @@ class EscapingSheepsGame extends Game {
                 this.mouse_current_object = null;
             }
             if (this.mouse_current_object != null) {
-                this.mouse_current_object.x = this.mousePos.x;
-                this.mouse_current_object.y = this.mousePos.y;
+                this.mouse_current_object.x = this.mouseRoomPos.x;
+                this.mouse_current_object.y = this.mouseRoomPos.y;
             }
         }
     }
 
     onGameDraw(ctx) {
         ctx.font = 'bold 16px "Segue UI"';
-        ctx.fillText("Zlap uciekajace owce", 10, 20);
+        ctx.fillText("Move objects using LMB and move camera using RMB", 10, 20);
         ctx.stroke();
     }
 }

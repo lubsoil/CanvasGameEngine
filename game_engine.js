@@ -18,6 +18,10 @@ class GameObject {
         this.instance_id = null;
     }
 
+    onInit(game){
+
+    }
+
     onTick(game) {
 
     }
@@ -96,6 +100,10 @@ class Game {
 
         this.keyboardMap = {};   //KLAWIATURA
         this.mouseMap = {};  //MYSZKA
+        this.mouseRoomPos = {
+            x: 0,
+            y: 0
+        }
         this.mousePos = {
             x: 0,
             y: 0
@@ -109,6 +117,12 @@ class Game {
                 repeat: "NONE"
             }
         }
+        this.camera = {
+            width: 800,
+            height: 600,
+            x: 0,
+            y: 0
+        }
         this.initLoading = {
             finished: false,
             progress: 0,
@@ -117,20 +131,21 @@ class Game {
         this.textures = {};
         this.sounds = {};
         this.currentObjectID = 0;
-        window.addEventListener("keydown", (e) => { this.onKeyStatusChange(e, this) });
         window.addEventListener("keyup", (e) => { this.onKeyStatusChange(e, this) });
+        window.addEventListener("keydown", (e) => { this.onKeyStatusChange(e, this) });
         this.canvasElement.addEventListener("mouseup", (e) => { this.onMouseStatusChange(e, this) });
         this.canvasElement.addEventListener("mousedown", (e) => { this.onMouseStatusChange(e, this) });
         this.canvasElement.addEventListener("touchstart", (e) => { this.onTouchStatusChange(e, this) });
         this.canvasElement.addEventListener("touchend", (e) => { this.onTouchStatusChange(e, this) });
         this.canvasElement.addEventListener("touchcancel", (e) => { this.onTouchStatusChange(e, this) });
+        this.canvasElement.addEventListener("contextmenu", (e) => { e.preventDefault() });
         window.addEventListener("touchmove", (e) => { this.onTouchMove(e, this) });
         window.addEventListener("mousemove", (e) => { this.onMouseMove(e, this) });
 
         this.onGameInit();
 
-        this.canvasElement.width = this.room.width;
-        this.canvasElement.height = this.room.height;
+        this.canvasElement.width = this.camera.width;
+        this.canvasElement.height = this.camera.height;
 
         this.initLoading.maxProgress = Object.values(this.textures).length + Object.values(this.sounds).length;
         if(this.initLoading.maxProgress == 0){
@@ -218,8 +233,9 @@ class Game {
     */
 
     createInstance(object) {
-        object.instance_id = this.currentObjectID;
+        object.instance_id = this.currentObjectID; 
         this.room.objects.set(this.currentObjectID, object);
+        object.onInit(this);
         this.currentObjectID++
         return (this.currentObjectID - 1);
     }
@@ -295,6 +311,8 @@ class Game {
         const rect = game.canvasElement.getBoundingClientRect();
         game.mousePos.x = e.clientX - rect.left;
         game.mousePos.y = e.clientY - rect.top;
+        game.mouseRoomPos.x = e.clientX - rect.left + game.camera.x;
+        game.mouseRoomPos.y = e.clientY - rect.top + game.camera.y;
     }
 
     onTouchStatusChange(e, game) {
@@ -305,6 +323,8 @@ class Game {
         const rect = game.canvasElement.getBoundingClientRect();
         game.mousePos.x = e.touches[0].clientX - rect.left;
         game.mousePos.y = e.touches[0].clientY - rect.top;
+        game.mouseRoomPos.x = e.touches[0].clientX - rect.left + game.camera.x;
+        game.mouseRoomPos.y = e.touches[0].clientY - rect.top + game.camera.y;
     }
 
     isMousePressed(selkey) {
@@ -337,14 +357,14 @@ class Game {
             if (this.room.background.texture != null) {
                 if (this.isTextureLoaded(this.room.background.texture)) {
                     if (this.room.background.repeat == BACKGROUND_REPEAT.NONE) {
-                        ctx.drawImage(getTexture(this.room.background.texture).image, 0, 0);
+                        ctx.drawImage(getTexture(this.room.background.texture).image, 0 - this.camera.x, 0 - this.camera.y);
                     } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_X) {
                         var texture = this.getTexture(this.room.background.texture).image;
                         var image_width = texture.width;
                         var x = 0;
 
                         while (x < room.width) {
-                            ctx.drawImage(texture, x, 0);
+                            ctx.drawImage(texture, x - this.camera.x, 0 - this.camera.y);
                             x += image_width;
                         }
                     } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_Y) {
@@ -353,7 +373,7 @@ class Game {
                         var y = 0;
 
                         while (y < this.room.height) {
-                            ctx.drawImage(texture, 0, y);
+                            ctx.drawImage(texture, 0 - this.camera.x, y - this.camera.y);
                             y += image_height;
                         }
                     } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT) {
@@ -366,7 +386,7 @@ class Game {
                         while (y < this.room.height) {
                             x = 0;
                             while (x < this.room.width) {
-                                ctx.drawImage(texture, x, y);
+                                ctx.drawImage(texture, x - this.camera.x, y - this.camera.y);
                                 x += image_width;
                             }
                             y += image_height;
@@ -507,8 +527,8 @@ function drawTexture(ctx, game, texture, frame, x, y, angle) {
 
             var final_texture = transformTexture(textureObject.image, textureObject.origin_x, textureObject.origin_y, dest_x, dest_y, textureObject.frames_width, textureObject.frames_height, angle);
 
-            var draw_x = x - textureObject.origin_x - (textureObject.frames_width / 2);
-            var draw_y = y - textureObject.origin_y - (textureObject.frames_height / 2);
+            var draw_x = x - game.camera.x - textureObject.origin_x - (textureObject.frames_width / 2);
+            var draw_y = y - game.camera.y - textureObject.origin_y - (textureObject.frames_height / 2);
 
             ctx.drawImage(final_texture, draw_x, draw_y);
         }
