@@ -15,6 +15,8 @@ class GameObject {
         }
         this.texture = null;
         this.texture_frame = 0;
+        this.texture_speed = 1;
+        this.texture_speed_timeout = Math.round(60/this.texture_speed);
         this.instance_id = null;
     }
 
@@ -23,7 +25,19 @@ class GameObject {
     }
 
     onTick(game) {
-
+        if(this.texture_speed > 0){
+            if(this.texture_speed_timeout > 0){
+                this.texture_speed_timeout -= 1;
+            }else{
+                var fm_amount = game.getTexture(this.texture).frames_amount;
+                if(this.texture_frame < fm_amount -1){
+                    this.texture_frame += 1;
+                }else{
+                    this.texture_frame = 0
+                }
+                this.texture_speed_timeout = Math.round(60/this.texture_speed);
+            }
+        }
     }
 
     drawObject(game, ctx) {
@@ -245,30 +259,24 @@ class Game {
     }
 
     instanceFind(object, number) {
-        var objects = this.room.objects.values().toArray();
-        var current = 0;
-        for (var i = 0; i < objects.length; i++) {
-            var obj = objects[i];
-            if (obj instanceof object) {
-                if (current == number) {
-                    return obj;
-                }
-                current++;
-            }
+        var objects = this.room.objects.values().toArray().filter((obj) => obj instanceof object);
+        if(objects.length > number){
+            return object[number];
         }
+        return null;
     }
 
     instanceNumber(object) {
-        var objects = this.room.objects.values().toArray();
-        var number = 0;
-        for (var i = 0; i < objects.length; i++) {
-            var obj = objects[i];
-            if (obj instanceof object) {
-                number++;
-            }
-        }
+        var objects = this.room.objects.values().toArray().filter((obj) => obj instanceof object);
+        return objects.length;
+    }
 
-        return number;
+    instanceNearest(object,x,y){
+        var objects = this.room.objects.values().toArray().filter((obj) => obj instanceof object).sort((a,b) => point_distance(x,y,a.x,a.y) - point_distance(x,y,a.x,a.y));
+        if(objects.length > 0){
+            return objects[0];
+        }
+        return null;
     }
 
     /*
