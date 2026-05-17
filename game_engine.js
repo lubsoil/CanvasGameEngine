@@ -41,7 +41,7 @@ class GameObject {
     }
 
     drawObject(game, ctx) {
-        drawTexture(ctx, game, this.texture, this.texture_frame, this.x - game.camera.x, this.y - game.camera.y, this.angle);
+        ctx.drawTexture(this.texture, this.texture_frame, this.x - game.camera.x, this.y - game.camera.y, this.angle);
     }
 }
 
@@ -111,7 +111,7 @@ class GameSound {
 class Game {
     constructor(canvas) {
         this.canvasElement = document.getElementById(canvas);
-
+        
         this.keyboardMap = {};   //KLAWIATURA
         this.mouseMap = {};  //MYSZKA
         this.mouseRoomPos = {
@@ -354,27 +354,25 @@ class Game {
     */
 
     drawGameCanvas() {
-        let ctx = this.canvasElement.getContext("2d");
+        var ctx = new GameRenderingContext(this,this.canvasElement.getContext("2d"));
 
-        ctx.clearRect(0, 0, this.room.width, this.room.height);
+        ctx.context.clearRect(0, 0, this.room.width, this.room.height);
 
         if(!this.initLoading.finished){
-            ctx.fillStyle = "white";
-            ctx.fillText("Loading " + Math.round((this.initLoading.progress/this.initLoading.maxProgress)*100) + "%", 5, 10);
-            ctx.stroke();
+            ctx.drawText("Loading " + Math.round((this.initLoading.progress/this.initLoading.maxProgress)*100) + "%", 5, 10,"black");
         }else{
             //DRAWING BACKGROUND
             if (this.room.background.texture != null) {
                 if (this.isTextureLoaded(this.room.background.texture)) {
                     if (this.room.background.repeat == BACKGROUND_REPEAT.NONE) {
-                        ctx.drawImage(getTexture(this.room.background.texture).image, 0 - this.camera.x, 0 - this.camera.y);
+                        ctx.context.drawImage(getTexture(this.room.background.texture).image, 0 - this.camera.x, 0 - this.camera.y);
                     } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_X) {
                         var texture = this.getTexture(this.room.background.texture).image;
                         var image_width = texture.width;
                         var x = 0;
 
                         while (x < room.width) {
-                            ctx.drawImage(texture, x - this.camera.x, 0 - this.camera.y);
+                            ctx.context.drawImage(texture, x - this.camera.x, 0 - this.camera.y);
                             x += image_width;
                         }
                     } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT_Y) {
@@ -383,7 +381,7 @@ class Game {
                         var y = 0;
 
                         while (y < this.room.height) {
-                            ctx.drawImage(texture, 0 - this.camera.x, y - this.camera.y);
+                            ctx.context.drawImage(texture, 0 - this.camera.x, y - this.camera.y);
                             y += image_height;
                         }
                     } else if (this.room.background.repeat == BACKGROUND_REPEAT.REPEAT) {
@@ -396,7 +394,7 @@ class Game {
                         while (y < this.room.height) {
                             x = 0;
                             while (x < this.room.width) {
-                                ctx.drawImage(texture, x - this.camera.x, y - this.camera.y);
+                                ctx.context.drawImage(texture, x - this.camera.x, y - this.camera.y);
                                 x += image_width;
                             }
                             y += image_height;
@@ -416,10 +414,10 @@ class Game {
             var interfaceCanvas = document.createElement('canvas');
             interfaceCanvas.width = this.canvasElement.width;
             interfaceCanvas.height = this.canvasElement.height;
-            var interfaceCtx = interfaceCanvas.getContext('2d');
+            var interfaceCtx = new GameRenderingContext(this,interfaceCanvas.getContext('2d'));
             this.onGameInterfaceDraw(interfaceCtx);
 
-            ctx.drawImage(interfaceCanvas,0,0);
+            ctx.context.drawImage(interfaceCanvas,0,0,this.canvasElement.width,this.canvasElement.height);
         }
 
         
@@ -481,6 +479,78 @@ class Game {
     }
 }
 
+class GameRenderingContext {
+    constructor(game,context) {
+        this.game = game;
+        this.context = context;
+    }
+    
+    transformTexture(img, off_x, off_y, x, y, width, height, angle) {
+        var cv = document.createElement('canvas');
+        cv.width = width*2;
+        cv.height = height*2;
+        var ctx = cv.getContext('2d');
+
+        ctx.translate((width / 2) + off_x, (height / 2) + off_y);
+        ctx.rotate(angle);
+        ctx.drawImage(img, x, y, width, height, -off_x, -off_y, width, height);
+        return cv;
+    }
+
+    drawLine(x1,y1,x2,y2,color="black",width=1){
+        this.context.strokeStyle = color;
+        this.context.lineWidth = width;
+        this.context.beginPath();
+        this.context.moveTo(x1, y1);
+        this.context.lineTo(x2, y2);
+        this.context.closePath();
+        this.context.stroke();
+    }
+
+    drawText(string,x,y,color="black",font='12px "Segue UI"'){
+        this.context.font = font;
+        this.context.fillStyle = color;
+        this.context.fillText(string, x, y);
+        this.context.stroke();
+    }
+
+    drawCircle(x,y,radius,filled=false){
+        this.context.beginPath();
+        this.context.arc(x, y, radius, 0, 2 * Math.PI);
+        if(filled){
+            this.context.fill();
+        }else{
+            this.context.stroke();
+        }
+    }
+
+    drawTexture(texture, frame, x, y, angle) {
+        if (texture != null) {
+            if (this.game.isTextureLoaded(texture)) {
+                var textureObject = this.game.getTexture(texture);
+
+                var final_frame = frame % textureObject.frames_amount;
+
+                var img_width = textureObject.image.width;
+                var img_height = textureObject.image.height;
+
+                var per_row = img_width / textureObject.frames_width;
+
+                var dest_x = (final_frame % per_row) * textureObject.frames_width;
+                var dest_y = Math.floor(final_frame / per_row) * textureObject.frames_height;
+
+                var final_texture = this.transformTexture(textureObject.image, textureObject.origin_x, textureObject.origin_y, dest_x, dest_y, textureObject.frames_width, textureObject.frames_height, angle);
+
+                var draw_x = x - textureObject.origin_x - (textureObject.frames_width / 2);
+                var draw_y = y - textureObject.origin_y - (textureObject.frames_height / 2);
+
+                this.context.drawImage(final_texture, draw_x, draw_y);
+            }
+        }
+    }
+
+}
+
 /*
     ENUMS
 */
@@ -510,41 +580,4 @@ function lengthdir_x(dist, dir) {
 
 function lengthdir_y(dist, dir) {
     return dist * Math.sin(dir);
-}
-
-function transformTexture(img, off_x, off_y, x, y, width, height, angle) {
-    var cv = document.createElement('canvas');
-    cv.width = width*2;
-    cv.height = height*2;
-    var ctx = cv.getContext('2d');
-
-    ctx.translate((width / 2) + off_x, (height / 2) + off_y);
-    ctx.rotate(angle);
-    ctx.drawImage(img, x, y, width, height, -off_x, -off_y, width, height);
-    return cv;
-}
-
-function drawTexture(ctx, game, texture, frame, x, y, angle) {
-    if (texture != null) {
-        if (game.isTextureLoaded(texture)) {
-            var textureObject = game.getTexture(texture);
-
-            var final_frame = frame % textureObject.frames_amount;
-
-            var img_width = textureObject.image.width;
-            var img_height = textureObject.image.height;
-
-            var per_row = img_width / textureObject.frames_width;
-
-            var dest_x = (final_frame % per_row) * textureObject.frames_width;
-            var dest_y = Math.floor(final_frame / per_row) * textureObject.frames_height;
-
-            var final_texture = transformTexture(textureObject.image, textureObject.origin_x, textureObject.origin_y, dest_x, dest_y, textureObject.frames_width, textureObject.frames_height, angle);
-
-            var draw_x = x - textureObject.origin_x - (textureObject.frames_width / 2);
-            var draw_y = y - textureObject.origin_y - (textureObject.frames_height / 2);
-
-            ctx.drawImage(final_texture, draw_x, draw_y);
-        }
-    }
 }

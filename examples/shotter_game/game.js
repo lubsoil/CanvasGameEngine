@@ -170,8 +170,6 @@ class ShotterGame extends Game {
     }
 
     onGameDraw(ctx) {
-        ctx.font = 'bold 16px "Segue UI"';
-        ctx.fillText("Score: " + this.score, 10, 20);
-        ctx.stroke();
+        ctx.drawText("Score: " + this.score, 10, 20)
     }
 }

@@ -334,8 +334,10 @@ class UfoSurvivorGame extends Game {
 
     onGameInterfaceDraw(ctx){
         if(this.joystick.visible){
-            drawTexture(ctx, this, "JOYSTICK_BORDER", 0, this.joystick.position.x, this.joystick.position.y, 0);
-            drawTexture(ctx, this, "JOYSTICK_STICK", 0, this.joystick.stick.x, this.joystick.stick.y, 0);
+            ctx.drawTexture("JOYSTICK_BORDER", 0, this.joystick.position.x, this.joystick.position.y, 0);
+            ctx.drawTexture("JOYSTICK_STICK", 0, this.joystick.stick.x, this.joystick.stick.y, 0);
         }
+        ctx.drawLine(0,535,960,535,"black",10);
+        ctx.drawLine(0,535,960*(this.player.expierience/(this.player.level*10)),535,"blue",10);
     }
 }

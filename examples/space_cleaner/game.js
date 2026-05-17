@@ -42,8 +42,8 @@ class Spaceship extends GameObject {
     }
 
     drawObject(game, ctx) {
-        drawTexture(ctx, game, this.texture, 1 + this.flame_index, this.x, this.y, this.angle);
-        drawTexture(ctx, game, this.texture, 0, this.x, this.y, this.angle);
+        ctx.drawTexture(this.texture, 1 + this.flame_index, this.x, this.y, this.angle);
+        ctx.drawTexture(this.texture, 0, this.x, this.y, this.angle);
     }
 }
 
@@ -257,9 +257,7 @@ class SpaceCleanerGame extends Game {
     }
 
     onGameDraw(ctx) {
-        ctx.fillStyle = "white";
-        ctx.fillText("Score: " + Math.floor(this.score / 16) + "M\nHighscore: " + Math.floor(this.highScore / 16) + "M", 5, 10);
-        ctx.stroke();
+        ctx.drawText("Score: " + Math.floor(this.score / 16) + "M\nHighscore: " + Math.floor(this.highScore / 16) + "M", 5, 10,"white")
     }
 }
 

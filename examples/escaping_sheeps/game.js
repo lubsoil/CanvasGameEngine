@@ -223,8 +223,6 @@ class EscapingSheepsGame extends Game {
     }
 
     onGameDraw(ctx) {
-        ctx.font = 'bold 16px "Segue UI"';
-        ctx.fillText("Move objects using LMB and move camera using RMB", 10, 20);
-        ctx.stroke();
+        ctx.drawText("Move objects using LMB and move camera using RMB", 10, 20);
     }
 }
