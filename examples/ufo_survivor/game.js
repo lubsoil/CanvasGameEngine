@@ -15,7 +15,6 @@ class Player extends GameObject{
         }
         this.direction = 0;
         this.speed = 0;
-        this.image_cooldown = 0;
         this.texture_speed = 5;
 
         this.bullet_cooldown = 0;
@@ -28,6 +27,8 @@ class Player extends GameObject{
             damage: 2,
             attack_cooldown: 60
         }
+
+        this.depth = 10;
     }
 
     onInit(game){
@@ -61,6 +62,8 @@ class Player extends GameObject{
             this.y = 3972;	
         }
 
+        this.angle += this.speed*0.01;
+
 
         var nearestEnemy = game.instanceNearest(Enemy,this.x,this.y);
         if(nearestEnemy != null){
@@ -81,11 +84,19 @@ class Player extends GameObject{
             this.bullet_cooldown--;
         }
 
-        //PICKING_UP PICKABLE
-        var is_pickable = game.collision_rectangle(this.x+this.collision.size.left, this.y+this.collision.size.top,this.x+this.collision.size.right,this.y+this.collision.size.bottom, Pickable);
-        if(is_pickable != null){
-            is_pickable.onPickUp(game);
-            game.removeInstance(is_pickable.instance_id);
+        if(this.expierience >= 10*this.level){
+            this.level += 1;
+            var random_reward = Math.round(Math.random() * 3);
+            if(random_reward == 0){
+                if(this.stats.attack_cooldown >= 30){
+                    this.stats.attack_cooldown -= 5;
+                }
+            }else if(random_reward == 1){
+                this.stats.speed += 1;
+            }else if(random_reward == 2){
+                this.stats.damage += 1;
+            }
+            this.expierience = 0;
         }
     }
 }
@@ -97,6 +108,8 @@ class Enemy extends GameObject{
     }
 
     onTick(game){
+        super.onTick(game);
+        
         if(this.health <= 0){
             var exp = new Expierience(this.x,this.y);
             game.createInstance(exp);
@@ -180,6 +193,14 @@ class Pickable extends GameObject{
         super(x,y)
     }
 
+    onTick(game){
+        var is_hitting_player = game.collision_rectangle(this.x+this.collision.size.left, this.y+this.collision.size.top,this.x+this.collision.size.right,this.y+this.collision.size.bottom, Player);
+        if(is_hitting_player != null){
+            this.onPickUp(game);
+            game.removeInstance(this.instance_id);
+        }
+    }
+
     onPickUp(game){
 
     }
@@ -198,7 +219,6 @@ class Expierience extends Pickable{
                 bottom: 4
             }
         }
-        
     }
 
     onPickUp(game){
@@ -225,6 +245,12 @@ class UfoSurvivorGame extends Game {
         this.addTexture("BULLET", new GameTexture("textures/bullet.png", 4, 4));
         this.addTexture("JOYSTICK_BORDER", new GameTexture("textures/joystick_border.png", 64, 64));
         this.addTexture("JOYSTICK_STICK", new GameTexture("textures/joystick_stick.png", 24, 24));
+        this.addTexture("EXPBAR_EMPTY", new GameTexture("textures/expbar_empty.png", 0, 0));
+        this.addTexture("EXPBAR_FULL", new GameTexture("textures/expbar_full.png", 0, 0));
+
+        this.addSound("MUSIC", new GameSound("sounds/music.mp3"));
+
+        
 
         this.joystick = {
             visible: true,
@@ -296,14 +322,20 @@ class UfoSurvivorGame extends Game {
                 this.createInstance(new SpaceHornet(this.player.x + lengthdir_x(500, random_direction), this.player.y + lengthdir_y(500, random_direction)));
                 this.enemy_cooldown = 120;
             }
-            
         }
+
+        var soundObject = this.getSound("MUSIC");
+        soundObject.play(true);
     }
 
     onGameDraw(ctx) {
+        
+    }
+
+    onGameInterfaceDraw(ctx){
         if(this.joystick.visible){
-            drawTexture(ctx, this, "JOYSTICK_BORDER", 0, this.camera.x + this.joystick.position.x, this.camera.y + this.joystick.position.y, 0);
-            drawTexture(ctx, this, "JOYSTICK_STICK", 0, this.camera.x + this.joystick.stick.x, this.camera.y +this.joystick.stick.y, 0);
+            drawTexture(ctx, this, "JOYSTICK_BORDER", 0, this.joystick.position.x, this.joystick.position.y, 0);
+            drawTexture(ctx, this, "JOYSTICK_STICK", 0, this.joystick.stick.x, this.joystick.stick.y, 0);
         }
     }
 }

@@ -16,7 +16,7 @@ class GameObject {
         this.texture = null;
         this.texture_frame = 0;
         this.texture_speed = 1;
-        this.texture_speed_timeout = Math.round(60/this.texture_speed);
+        this.texture_speed_timeout = 0;
         this.instance_id = null;
     }
 
@@ -41,7 +41,7 @@ class GameObject {
     }
 
     drawObject(game, ctx) {
-        drawTexture(ctx, game, this.texture, this.texture_frame, this.x, this.y, this.angle);
+        drawTexture(ctx, game, this.texture, this.texture_frame, this.x - game.camera.x, this.y - game.camera.y, this.angle);
     }
 }
 
@@ -179,6 +179,8 @@ class Game {
 
     onGameDraw(ctx) { }
 
+    onGameInterfaceDraw(ctx) {}
+
     tickEvent(game) {
         if(!game.initLoading.finished){
             var loaded = 0;
@@ -260,8 +262,8 @@ class Game {
 
     instanceFind(object, number) {
         var objects = this.room.objects.values().toArray().filter((obj) => obj instanceof object);
-        if(objects.length > number){
-            return object[number];
+        if(objects.length >= number){
+            return objects[number];
         }
         return null;
     }
@@ -317,10 +319,10 @@ class Game {
 
     onMouseMove(e, game) {
         const rect = game.canvasElement.getBoundingClientRect();
-        game.mousePos.x = e.clientX - rect.left;
-        game.mousePos.y = e.clientY - rect.top;
-        game.mouseRoomPos.x = e.clientX - rect.left + game.camera.x;
-        game.mouseRoomPos.y = e.clientY - rect.top + game.camera.y;
+        game.mousePos.x = (e.clientX - rect.left) * (game.canvasElement.width/game.canvasElement.clientWidth);
+        game.mousePos.y = (e.clientY - rect.top) * (game.canvasElement.height/game.canvasElement.clientHeight);
+        game.mouseRoomPos.x = (e.clientX - rect.left) * (game.canvasElement.width/game.canvasElement.clientWidth) + game.camera.x;
+        game.mouseRoomPos.y = (e.clientY - rect.top) * (game.canvasElement.height/game.canvasElement.clientHeight) + game.camera.y;
     }
 
     onTouchStatusChange(e, game) {
@@ -329,10 +331,10 @@ class Game {
 
     onTouchMove(e, game) {
         const rect = game.canvasElement.getBoundingClientRect();
-        game.mousePos.x = e.touches[0].clientX - rect.left;
-        game.mousePos.y = e.touches[0].clientY - rect.top;
-        game.mouseRoomPos.x = e.touches[0].clientX - rect.left + game.camera.x;
-        game.mouseRoomPos.y = e.touches[0].clientY - rect.top + game.camera.y;
+        game.mousePos.x = (e.touches[0].clientX - rect.left) * (game.canvasElement.width/game.canvasElement.clientWidth);
+        game.mousePos.y = (e.touches[0].clientY - rect.top)* (game.canvasElement.width/game.canvasElement.clientWidth);
+        game.mouseRoomPos.x = (e.touches[0].clientX - rect.left) * (game.canvasElement.width/game.canvasElement.clientWidth) + game.camera.x;
+        game.mouseRoomPos.y = (e.touches[0].clientY - rect.top) * (game.canvasElement.width/game.canvasElement.clientWidth) + game.camera.y;
     }
 
     isMousePressed(selkey) {
@@ -409,6 +411,15 @@ class Game {
             })
 
             this.onGameDraw(ctx);
+
+            //DRAWING INTERFACE
+            var interfaceCanvas = document.createElement('canvas');
+            interfaceCanvas.width = this.canvasElement.width;
+            interfaceCanvas.height = this.canvasElement.height;
+            var interfaceCtx = interfaceCanvas.getContext('2d');
+            this.onGameInterfaceDraw(interfaceCtx);
+
+            ctx.drawImage(interfaceCanvas,0,0);
         }
 
         
@@ -421,14 +432,12 @@ class Game {
     */
 
     collision_point(x, y, object) {
-        var objects = this.room.objects.values().toArray();
+        var objects = this.room.objects.values().toArray().filter((obj) => obj instanceof object);
         for (var i = 0; i < objects.length; i++) {
             var obj = objects[i];
-            if (obj instanceof object) {
-                if (obj.collision.type == "RECTANGLE") {
-                    if (x >= obj.x + obj.collision.size.left && y >= obj.y + obj.collision.size.top && x <= obj.x + obj.collision.size.right && y <= obj.y + obj.collision.size.bottom) {
-                        return obj;
-                    }
+            if (obj.collision.type == "RECTANGLE") {
+                if (x >= obj.x + obj.collision.size.left && y >= obj.y + obj.collision.size.top && x <= obj.x + obj.collision.size.right && y <= obj.y + obj.collision.size.bottom) {
+                    return obj;
                 }
             }
         }
@@ -437,35 +446,33 @@ class Game {
     }
 
     collision_rectangle(x1, y1, x2, y2, object) {
-        var objects = this.room.objects.values().toArray();
+        var objects = this.room.objects.values().toArray().filter((obj) => obj instanceof object);
         for (var i = 0; i < objects.length; i++) {
             var obj = objects[i];
-            if (obj instanceof object) {
-                if (obj.collision.type == "RECTANGLE") {
-                    var sx = x1 < x2 ? x1 : x2;
-                    var sy = y1 < y2 ? y1 : y2;
-                    var ex = x1 > x2 ? x1 : x2;
-                    var ey = y1 > y2 ? y1 : y2;
-    
-                    var obj_sx = obj.x + obj.collision.size.left;
-                    var obj_sy = obj.y + obj.collision.size.top;
-                    var obj_ex = obj.x + obj.collision.size.right;
-                    var obj_ey = obj.y + obj.collision.size.bottom;
-    
-                    var is_x = false;
-                    var is_y = false;
-    
-                    if((sx >= obj_sx && sx <= obj_ex) || (ex >= obj_sx && ex <= obj_ex)){
-                        is_x = true;
-                    }
-    
-                    if((sy >= obj_sy && sy <= obj_ey) || (ey >= obj_sy && ey <= obj_ey)){
-                        is_y = true;
-                    }
-    
-                    if(is_x && is_y){
-                        return obj;
-                    }
+            if (obj.collision.type == "RECTANGLE") {
+                var sx = x1 < x2 ? x1 : x2;
+                var sy = y1 < y2 ? y1 : y2;
+                var ex = x1 > x2 ? x1 : x2;
+                var ey = y1 > y2 ? y1 : y2;
+
+                var obj_sx = obj.x + obj.collision.size.left;
+                var obj_sy = obj.y + obj.collision.size.top;
+                var obj_ex = obj.x + obj.collision.size.right;
+                var obj_ey = obj.y + obj.collision.size.bottom;
+
+                var is_x = false;
+                var is_y = false;
+
+                if((sx >= obj_sx && sx <= obj_ex) || (ex >= obj_sx && ex <= obj_ex)){
+                    is_x = true;
+                }
+
+                if((sy >= obj_sy && sy <= obj_ey) || (ey >= obj_sy && ey <= obj_ey)){
+                    is_y = true;
+                }
+
+                if(is_x && is_y){
+                    return obj;
                 }
             }
         }
@@ -507,14 +514,13 @@ function lengthdir_y(dist, dir) {
 
 function transformTexture(img, off_x, off_y, x, y, width, height, angle) {
     var cv = document.createElement('canvas');
-    cv.width = width * 2;
-    cv.height = height * 2;
+    cv.width = width*2;
+    cv.height = height*2;
     var ctx = cv.getContext('2d');
 
-    ctx.translate((height / 2) + off_x, (width / 2) + off_y);
+    ctx.translate((width / 2) + off_x, (height / 2) + off_y);
     ctx.rotate(angle);
     ctx.drawImage(img, x, y, width, height, -off_x, -off_y, width, height);
-
     return cv;
 }
 
@@ -535,8 +541,8 @@ function drawTexture(ctx, game, texture, frame, x, y, angle) {
 
             var final_texture = transformTexture(textureObject.image, textureObject.origin_x, textureObject.origin_y, dest_x, dest_y, textureObject.frames_width, textureObject.frames_height, angle);
 
-            var draw_x = x - game.camera.x - textureObject.origin_x - (textureObject.frames_width / 2);
-            var draw_y = y - game.camera.y - textureObject.origin_y - (textureObject.frames_height / 2);
+            var draw_x = x - textureObject.origin_x - (textureObject.frames_width / 2);
+            var draw_y = y - textureObject.origin_y - (textureObject.frames_height / 2);
 
             ctx.drawImage(final_texture, draw_x, draw_y);
         }
